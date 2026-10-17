@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MIGRATE_VERSION: v4.18.1
+
+jobs:
+  database:
+    name: Migrations and DB smoke tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app -d app" --health-interval 2s --health-timeout 3s --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install golang-migrate
+        run: |
+          curl -sSL "https://github.com/golang-migrate/migrate/releases/download/${MIGRATE_VERSION}/migrate.linux-amd64.tar.gz" \
+            | tar -xz -C /usr/local/bin migrate
+      - name: up -> smoke tests -> down -> up
+        env:
+          MIGRATE_DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+        run: scripts/db-check.sh
+
+  backend:
+    name: Backend lint and tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test" --health-interval 2s --health-timeout 3s --health-retries 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install golang-migrate
+        run: |
+          curl -sSL "https://github.com/golang-migrate/migrate/releases/download/${MIGRATE_VERSION}/migrate.linux-amd64.tar.gz" \
+            | tar -xz -C /usr/local/bin migrate
+      - name: Migrate test database
+        run: migrate -path ../migrations -database "postgres://app:app@localhost:5432/app_test?sslmode=disable" up
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - name: pytest
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app_test
+        run: uv run pytest -q
+
+  frontend:
+    name: Frontend lint, type-check, tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint:check
+      - run: npm run type-check
+      - run: npm run test
+      - run: npm run build-only
+
+  images:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build

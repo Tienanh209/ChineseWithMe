@@ -2,7 +2,7 @@
 
 Hand-off brief for implementation. The database is already designed and tested.
 
-- **Source of truth for the schema: `migrations/000001_init.up.sql`** (PostgreSQL 12+, 20 tables). Read the SQL, not the images.
+- **Source of truth for the schema: `migrations/000001_init.up.sql`** (PostgreSQL 12+, 22 tables). Read the SQL, not the images.
 - ERD for humans: `docs/erd.png` and `docs/erd.svg`.
 - DB regression tests: `tests/db_smoke.sql` (run on an empty database right after the up migration).
 
@@ -20,6 +20,8 @@ The stack is not chosen. If the user has not said otherwise, ask once, then reco
 - Audio hosting. Suggestion: S3 + CDN, with `audio_url` columns holding the public URL.
 - Admin access. The schema has no roles. If admins are needed (M9), add a column such as `users.role` to `000001_init.up.sql` and its down file.
 - Migration runner. File names follow golang-migrate (`000001_init.up.sql`, `000001_init.down.sql`); dbmate works too. `000001` is still a draft and may be edited in place until the first deploy. After that, only add new migrations.
+
+> **Decided 2026-10-17** (details in `CLAUDE.md`): FastAPI + SQLAlchemy ORM over the SQL migrations, Vue 3, golang-migrate; S3 + CDN with bucket-relative `audio_path` columns; `users.role` for admins. Added to `000001`: `sessions`, `auth_tokens`, `users.timezone`, `users.role`; `lessons.is_published` now defaults to false.
 
 ## Schema facts to respect
 
@@ -85,9 +87,9 @@ M0 → M1 → M9a (vocabulary import) → M2 → M3 → M9b (lesson import) → 
 
 ## M4. Vocabulary games (`game_sessions`, `vocab_review_logs`)
 
-- [ ] Game types allowed by the schema: `match`, `quiz`, `typing`, `memory`. These were guessed; confirm the real list with the user. Adding one needs a migration.
+- [ ] Game types allowed by the schema: `match`, `quiz`, `typing`, `memory` (confirmed). Adding one needs a migration.
 - [ ] Word source: a vocab group or a level.
-- [ ] On finish, insert `game_sessions` (`score`, `correct_count <= total_count`, `duration_seconds`, `group_id`, `level`) and one `vocab_review_logs` row per word with `source = 'game'`. Decide with the user whether games also update `user_vocab_progress`; default is log only.
+- [ ] On finish, insert `game_sessions` (`score`, `correct_count <= total_count`, `duration_seconds`, `group_id`, `level`) and one `vocab_review_logs` row per word with `source = 'game'`. Games log only; they do not update `user_vocab_progress` (decided).
 - [ ] Leaderboard per `game_type` (index on `(game_type, score DESC)`) and personal best.
 
 ## M5. Reading, TOCFL (`lessons` with `type = 'reading'`, `lesson_segments`, `segment_vocabulary`, `questions`, `question_choices`, `exercise_attempts`, `exercise_answers`, `user_lesson_progress`)
@@ -99,7 +101,7 @@ M0 → M1 → M9a (vocabulary import) → M2 → M3 → M9b (lesson import) → 
 
 ## M6. Listening, TOCFL (`lessons` with `type = 'listening'`)
 
-- [ ] Audio player: play/pause, seek, speed 0.75 to 1.25. Question-level `audio_url` is supported.
+- [ ] Audio player: play/pause, seek, speed 0.75 to 1.25. Question-level `audio_path` is supported.
 - [ ] Transcript (the segments) hidden until the exercise is submitted.
 - [ ] Save `last_position_ms` periodically and on pause; resume where the user left off.
 - [ ] Same exercise flow and scoring as M5.
@@ -107,7 +109,7 @@ M0 → M1 → M9a (vocabulary import) → M2 → M3 → M9b (lesson import) → 
 ## M7. Dictation (`lessons` with `type = 'dictation'`, `lesson_segments`, `dictation_attempts`)
 
 - [ ] Play one segment by `start_ms` to `end_ms`, with replay and slow playback.
-- [ ] The user types hanzi. Compare with `hanzi_text` after normalising punctuation and whitespace. Store `accuracy` (percentage of characters matched, 0 to 100) and `is_correct` (threshold configurable, default 100).
+- [ ] The user types hanzi. Compare with `hanzi_text` after normalising punctuation and whitespace. Simplified input is accepted (convert to Traditional with OpenCC before comparing). Store `accuracy` (percentage of characters matched, 0 to 100) and `is_correct` (threshold configurable, default 100).
 - [ ] Show a character-level diff and optional pinyin or zhuyin hint. Navigate previous and next segment, then a lesson summary.
 
 ## M8. Progress dashboard

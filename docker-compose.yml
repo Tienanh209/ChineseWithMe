@@ -1,0 +1,59 @@
+# Local development stack: http://localhost:8080 (SPA + /api + /audio).
+#   docker compose up --build
+#   docker compose run --rm api python -m app.cli seed
+name: chinese-learning
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    image: migrate/migrate:v4.18.1
+    volumes:
+      - ./migrations:/migrations:ro
+    command: ["-path=/migrations", "-database=postgres://app:app@db:5432/app?sslmode=disable", "up"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build: ./backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      ENV: ${ENV:-dev}
+      DATABASE_URL: postgresql+asyncpg://app:app@db:5432/app
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      AUDIO_BASE_URL: ${AUDIO_BASE_URL:-/audio}
+      LOG_JSON: ${LOG_JSON:-true}
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./dev-audio:/srv/audio:ro
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

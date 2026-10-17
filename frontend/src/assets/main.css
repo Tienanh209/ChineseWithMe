@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+
+/* Dark mode follows a class on <html>, set from the theme preference (system/light/dark). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Latin and Vietnamese from Noto Sans; hanzi and bopomofo fall through to Noto Sans TC. */
+  --font-sans: 'Noto Sans', 'Noto Sans TC', system-ui, sans-serif;
+  /* For Chinese text: Noto Sans TC first so punctuation and tone marks match the hanzi. */
+  --font-hanzi: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  --color-brand-50: #fef2f2;
+  --color-brand-100: #fee2e2;
+  --color-brand-600: #b91c1c;
+  --color-brand-700: #991b1b;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-stone-50 font-sans text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100;
+  }
+  :lang(zh) {
+    font-family: var(--font-hanzi);
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+}
+
+@layer components {
+  /* Annotations sit above the characters; line-height leaves room for them. */
+  ruby.annotated {
+    ruby-position: over;
+    ruby-align: center;
+    line-height: 2.4;
+  }
+  ruby.annotated rt {
+    font-family: var(--font-sans);
+    font-size: 0.5em;
+    letter-spacing: 0;
+    @apply text-stone-500 dark:text-stone-400;
+  }
+  ruby.annotated rt:lang(zh-Bopo) {
+    font-family: var(--font-hanzi);
+  }
+}
