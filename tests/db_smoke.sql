@@ -40,10 +40,10 @@ INSERT INTO vocab_groups (name, level) VALUES ('TOCFL Band A', 'A1');
 INSERT INTO vocab_group_items (group_id, vocabulary_id) VALUES (1, 1), (1, 4);
 
 INSERT INTO lesson_categories (name, level) VALUES ('TOCFL Listening', 'A2'), ('TOCFL Reading', 'A2');
-INSERT INTO lessons (category_id, type, level, title, audio_url, duration_seconds) VALUES
-  (1, 'listening', 'A2', 'At the cafe', 'https://cdn.example.com/a.mp3', 42),
-  (2, 'reading',   'A2', 'My weekend', NULL, NULL),
-  (1, 'dictation', 'A2', 'Greetings',  'https://cdn.example.com/b.mp3', 20);
+INSERT INTO lessons (category_id, type, level, title, audio_path, duration_seconds, is_published) VALUES
+  (1, 'listening', 'A2', 'At the cafe', 'lessons/1/a.mp3', 42, true),
+  (2, 'reading',   'A2', 'My weekend', NULL, NULL, true),
+  (1, 'dictation', 'A2', 'Greetings',  'lessons/3/b.mp3', 20, true);
 INSERT INTO lesson_segments (lesson_id, sequence_order, start_ms, end_ms, hanzi_text) VALUES
   (1, 1, 0, 3500, '你好，我想喝咖啡。'), (2, 1, NULL, NULL, '我每天學習中文。'), (3, 1, 0, 2000, '你好');
 INSERT INTO segment_vocabulary (segment_id, char_start, char_end, vocabulary_id) VALUES (2, 3, 5, 4), (1, 0, 2, 1);
@@ -108,7 +108,34 @@ SELECT pg_temp.expect_fail($$INSERT INTO game_sessions (user_id, game_type) VALU
 SELECT pg_temp.expect_fail($$INSERT INTO user_lesson_progress (user_id, lesson_id, status) VALUES (1, 2, 'completed')$$, 'completed without completed_at');
 SELECT pg_temp.expect_fail($$INSERT INTO exercise_attempts (user_id, lesson_id, total, score) VALUES (1, 1, 2, 3)$$, 'score > total');
 SELECT pg_temp.expect_fail($$INSERT INTO vocab_review_logs (user_id, vocabulary_id, source, rating) VALUES (1, 1, 'flashcard', 5)$$, 'rating out of range');
-SELECT pg_temp.expect_fail($$INSERT INTO lessons (category_id, type, level, title, audio_url) VALUES (1, 'listening', 'D1', 't', 'u')$$, 'invalid level');
+SELECT pg_temp.expect_fail($$INSERT INTO lessons (category_id, type, level, title, audio_path) VALUES (1, 'listening', 'D1', 't', 'u')$$, 'invalid level');
+
+-- defaults and checks added after the hand-off ---------------------------
+SELECT 'user defaults: role=' || role || ' timezone=' || timezone FROM users WHERE id = 1;
+SELECT pg_temp.expect_fail($$UPDATE users SET role = 'owner' WHERE id = 1$$, 'unknown role');
+SELECT pg_temp.expect_fail($$UPDATE users SET timezone = '' WHERE id = 1$$, 'empty timezone');
+INSERT INTO lessons (category_id, type, level, title) VALUES (2, 'reading', 'A2', 'Draft');
+SELECT 'new lesson unpublished by default: ' || NOT is_published FROM lessons WHERE title = 'Draft';
+SELECT pg_temp.expect_fail($$UPDATE lessons SET audio_path = 'https://cdn.example.com/a.mp3' WHERE id = 1$$, 'audio_path is a URL');
+SELECT pg_temp.expect_fail($$UPDATE lessons SET audio_path = '/lessons/1/a.mp3' WHERE id = 1$$, 'audio_path with leading slash');
+SELECT pg_temp.expect_fail($$UPDATE vocabulary SET audio_path = 's3://bucket/a.mp3' WHERE id = 1$$, 'vocabulary audio_path with scheme');
+
+-- sessions and auth tokens ------------------------------------------------
+INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (1, sha256('s1'), now() + interval '30 days');
+INSERT INTO auth_tokens (user_id, purpose, token_hash, email, expires_at)
+  VALUES (1, 'verify_email', sha256('t1'), 'anh@example.com', now() + interval '1 day');
+SELECT pg_temp.expect_fail($$INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (1, sha256('s1'), now() + interval '1 day')$$, 'duplicate session token');
+SELECT pg_temp.expect_fail($$INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (1, 'short', now() + interval '1 day')$$, 'session token hash not 32 bytes');
+SELECT pg_temp.expect_fail($$INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (1, sha256('s2'), now() - interval '1 day')$$, 'session already expired');
+SELECT pg_temp.expect_fail($$INSERT INTO auth_tokens (user_id, purpose, token_hash, email, expires_at) VALUES (1, 'magic_link', sha256('t2'), 'a@b.c', now() + interval '1 day')$$, 'unknown token purpose');
+WITH u AS (INSERT INTO users (email) VALUES ('tmp2@example.com') RETURNING id),
+     s AS (INSERT INTO sessions (user_id, token_hash, expires_at) SELECT id, sha256('tmp2'), now() + interval '1 day' FROM u RETURNING user_id)
+  INSERT INTO auth_tokens (user_id, purpose, token_hash, email, expires_at)
+  SELECT user_id, 'reset_password', sha256('tmp2'), 'tmp2@example.com', now() + interval '1 hour' FROM s;
+DELETE FROM users WHERE email = 'tmp2@example.com';
+SELECT 'sessions and tokens removed with user: '
+    || ((SELECT count(*) FROM sessions WHERE token_hash = sha256('tmp2')) = 0
+    AND (SELECT count(*) FROM auth_tokens WHERE token_hash = sha256('tmp2')) = 0);
 
 -- updated_at trigger ----------------------------------------------------
 UPDATE vocabulary SET part_of_speech = 'idiom' WHERE id = 1;

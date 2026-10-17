@@ -1,6 +1,10 @@
 -- 000001_init.up.sql
 -- Chinese learning app: initial schema.
--- Requires PostgreSQL 12+ (generated columns). Creates 20 tables.
+-- Requires PostgreSQL 12+ (generated columns). Creates 22 tables.
+--
+-- Audio columns (audio_path) hold an object key relative to the storage bucket,
+-- e.g. 'lessons/12/main.mp3', never a full URL. The API builds the public URL from
+-- AUDIO_BASE_URL, so moving to another CDN or bucket needs no data migration.
 
 BEGIN;
 
@@ -38,6 +42,8 @@ CREATE TABLE users (
   avatar_url        TEXT,
   target_level      cefr_level  NOT NULL DEFAULT 'A1',
   ui_lang           TEXT        NOT NULL DEFAULT 'vi' CHECK (ui_lang ~ '^[a-z]{2}$'),
+  timezone          TEXT        NOT NULL DEFAULT 'Asia/Ho_Chi_Minh' CHECK (timezone <> ''),  -- IANA name, validated by the app; defines "today" for streaks and daily caps
+  role              TEXT        NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -57,6 +63,38 @@ CREATE TABLE user_identities (
   UNIQUE (user_id, provider)                     -- one account per provider per user
 );
 
+-- Server-side login sessions. The cookie holds a random token; only its SHA-256 is
+-- stored, so a database leak does not leak usable sessions. Logging out everywhere
+-- (or taking over an account during Google linking) is DELETE FROM sessions WHERE user_id = ...
+CREATE TABLE sessions (
+  id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id      BIGINT      NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  token_hash   BYTEA       NOT NULL UNIQUE CHECK (octet_length(token_hash) = 32),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at   TIMESTAMPTZ NOT NULL,
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  user_agent   TEXT,
+  CONSTRAINT sessions_expiry CHECK (expires_at > created_at)
+);
+CREATE INDEX idx_sessions_user    ON sessions (user_id);
+CREATE INDEX idx_sessions_expires ON sessions (expires_at);  -- periodic cleanup
+
+-- Single-use emailed tokens (verify email, reset password). Only the SHA-256 is stored.
+-- email is the address the token was sent to: a verify token stops working if the
+-- user changes email before clicking it.
+CREATE TABLE auth_tokens (
+  id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id    BIGINT      NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  purpose    TEXT        NOT NULL CHECK (purpose IN ('verify_email', 'reset_password')),
+  token_hash BYTEA       NOT NULL UNIQUE CHECK (octet_length(token_hash) = 32),
+  email      CITEXT      NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  CONSTRAINT auth_tokens_expiry CHECK (expires_at > created_at)
+);
+CREATE INDEX idx_auth_tokens_user ON auth_tokens (user_id, purpose);
+
 -- ---------------------------------------------------------------------------
 -- Vocabulary
 -- ---------------------------------------------------------------------------
@@ -75,7 +113,7 @@ CREATE TABLE vocabulary (
   zhuyin            TEXT,
   part_of_speech    TEXT,
   level             cefr_level  NOT NULL,
-  audio_url         TEXT,
+  audio_path        TEXT        CHECK (audio_path !~ '^([a-zA-Z][a-zA-Z0-9+.-]*:|/)'),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   -- Polyphones (行 xíng / háng) are separate rows.
@@ -114,7 +152,7 @@ CREATE TABLE vocabulary_examples (
   pinyin        TEXT,
   zhuyin        TEXT,
   translations  JSONB    NOT NULL DEFAULT '{}'::jsonb,
-  audio_url     TEXT,
+  audio_path    TEXT     CHECK (audio_path !~ '^([a-zA-Z][a-zA-Z0-9+.-]*:|/)'),
   sort_order    SMALLINT NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_vocabulary_examples_vocab ON vocabulary_examples (vocabulary_id, sort_order);
@@ -154,13 +192,13 @@ CREATE TABLE lessons (
   type             lesson_type NOT NULL,
   level            cefr_level  NOT NULL,  -- usually equals the category level
   title            TEXT        NOT NULL,
-  audio_url        TEXT,
+  audio_path       TEXT        CHECK (audio_path !~ '^([a-zA-Z][a-zA-Z0-9+.-]*:|/)'),
   duration_seconds INTEGER CHECK (duration_seconds > 0),
   sort_order       INTEGER     NOT NULL DEFAULT 0,
-  is_published     BOOLEAN     NOT NULL DEFAULT true,
+  is_published     BOOLEAN     NOT NULL DEFAULT false,  -- imports start hidden; publish after validation
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT lessons_audio_required CHECK (type = 'reading' OR audio_url IS NOT NULL)
+  CONSTRAINT lessons_audio_required CHECK (type = 'reading' OR audio_path IS NOT NULL)
 );
 CREATE INDEX idx_lessons_category  ON lessons (category_id, sort_order);
 CREATE INDEX idx_lessons_type_lvl  ON lessons (type, level) WHERE is_published;
@@ -198,7 +236,7 @@ CREATE TABLE questions (
   lesson_id      BIGINT  NOT NULL REFERENCES lessons (id) ON DELETE CASCADE,
   sequence_order INTEGER NOT NULL,
   prompt         TEXT    NOT NULL,
-  audio_url      TEXT,
+  audio_path     TEXT    CHECK (audio_path !~ '^([a-zA-Z][a-zA-Z0-9+.-]*:|/)'),
   explanation    TEXT,
   UNIQUE (lesson_id, sequence_order)
 );

@@ -23,6 +23,8 @@ DROP TABLE IF EXISTS
   vocabulary_examples,
   vocabulary_translations,
   vocabulary,
+  auth_tokens,
+  sessions,
   user_identities,
   users;
 
