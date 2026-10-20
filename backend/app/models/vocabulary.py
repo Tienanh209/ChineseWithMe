@@ -10,7 +10,8 @@ from app.models.base import Base, CefrLevel, created_at_column, db_default, id_c
 # Must match the generated column in 000001_init.up.sql. Never written by the app.
 PINYIN_NORMALIZED_SQL = (
     "lower(replace(replace("
-    "translate(pinyin, 'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü', 'aaaaeeeeiiiioooouuuuuuuuu'), "
+    "translate(pinyin, 'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀĒÉĚÈĪÍǏÌŌÓǑÒŪÚǓÙǕǗǙǛÜ', "
+    "'aaaaeeeeiiiioooouuuuuuuuuAAAAEEEEIIIIOOOOUUUUUUUUU'), "
     "' ', ''), '''', ''))"
 )
 

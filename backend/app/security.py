@@ -75,3 +75,9 @@ async def current_user(user: Annotated[User | None, Depends(optional_user)]) -> 
     if user is None:
         raise AppError(401, "not_authenticated", "Sign in required.")
     return user
+
+
+async def require_admin(user: Annotated[User, Depends(current_user)]) -> User:
+    if user.role != "admin":
+        raise AppError(403, "forbidden", "Administrators only.")
+    return user

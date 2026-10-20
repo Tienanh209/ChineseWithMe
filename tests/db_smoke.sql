@@ -120,6 +120,16 @@ SELECT pg_temp.expect_fail($$UPDATE lessons SET audio_path = 'https://cdn.exampl
 SELECT pg_temp.expect_fail($$UPDATE lessons SET audio_path = '/lessons/1/a.mp3' WHERE id = 1$$, 'audio_path with leading slash');
 SELECT pg_temp.expect_fail($$UPDATE vocabulary SET audio_path = 's3://bucket/a.mp3' WHERE id = 1$$, 'vocabulary audio_path with scheme');
 
+-- pinyin_normalized with capital tone vowels (proper nouns such as Àomén) -----
+INSERT INTO vocabulary (traditional, simplified, pinyin, level) VALUES
+  ('澳門', '澳门', 'Àomén', 'B1'), ('歐洲', '欧洲', 'Ōuzhōu', 'B1'), ('女', '女', 'Nǚ', 'A2');
+SELECT CASE WHEN (SELECT string_agg(pinyin_normalized, ',' ORDER BY id) FROM vocabulary WHERE pinyin IN ('Àomén', 'Ōuzhōu', 'Nǚ'))
+              = 'aomen,ouzhou,nu'
+            THEN 'capital tone vowels normalise: ok'
+            ELSE 'FAIL capital tone vowels normalise: ' || (SELECT string_agg(pinyin_normalized, ',') FROM vocabulary WHERE pinyin IN ('Àomén', 'Ōuzhōu', 'Nǚ'))
+       END;
+DELETE FROM vocabulary WHERE pinyin IN ('Àomén', 'Ōuzhōu', 'Nǚ');
+
 -- sessions and auth tokens ------------------------------------------------
 INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (1, sha256('s1'), now() + interval '30 days');
 INSERT INTO auth_tokens (user_id, purpose, token_hash, email, expires_at)

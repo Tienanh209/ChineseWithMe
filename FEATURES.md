@@ -120,7 +120,7 @@ M0 → M1 → M9a (vocabulary import) → M2 → M3 → M9b (lesson import) → 
 
 ## M9. Content tooling
 
-- [ ] **M9a, vocabulary import** (CSV or JSON, idempotent). Upsert on `(traditional, pinyin)`. Validate pinyin with tone marks, zhuyin, level. Create translation, example and group-membership rows. Never write `pinyin_normalized`.
+- [x] **M9a, vocabulary import** (CSV or JSON, idempotent). Upsert on `(traditional, pinyin)`. Validate pinyin with tone marks, zhuyin, level. Create translation, example and group-membership rows. Never write `pinyin_normalized`.
 - [ ] **M9b, lesson import.** Upload audio to storage. Segments with `start_ms` and `end_ms`. Automatic word segmentation and matching against `vocabulary` to fill `segment_vocabulary`, with a report of unmatched words. Questions with choices.
 - [ ] Pre-publish validation report: exactly one correct choice per question, monotonic segment timings, audio reachable, lesson level equals category level.
 - [ ] Publish and unpublish via `is_published`.

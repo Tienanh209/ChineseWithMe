@@ -104,10 +104,12 @@ CREATE TABLE vocabulary (
   simplified        TEXT        NOT NULL CHECK (simplified <> ''),  -- same string when identical
   pinyin            TEXT        NOT NULL,                           -- with tone marks: nǐ hǎo
   -- Toneless, lowercase, no spaces: "nihao". Computed by the DB so it never drifts.
+  -- Capital tone vowels (Àomén) are listed explicitly so the result does not depend on the
+  -- database locale's lower().
   -- The app strips spaces from the query before searching.
   pinyin_normalized TEXT GENERATED ALWAYS AS (
     lower(replace(replace(
-      translate(pinyin, 'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü', 'aaaaeeeeiiiioooouuuuuuuuu'),
+      translate(pinyin, 'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀĒÉĚÈĪÍǏÌŌÓǑÒŪÚǓÙǕǗǙǛÜ', 'aaaaeeeeiiiioooouuuuuuuuuAAAAEEEEIIIIOOOOUUUUUUUUU'),
       ' ', ''), '''', ''))
   ) STORED,
   zhuyin            TEXT,

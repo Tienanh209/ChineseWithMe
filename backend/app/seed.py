@@ -43,7 +43,7 @@ WORDS = [
     ("想", "想", "xiǎng", "ㄒㄧㄤˇ", "verb", "A1", "muốn; nghĩ", "to want; to think"),
     ("去", "去", "qù", "ㄑㄩˋ", "verb", "A1", "đi", "to go"),
     ("每天", "每天", "měitiān", "ㄇㄟˇ ㄊㄧㄢ", "adverb", "A1", "mỗi ngày", "every day"),
-    ("中文", "中文", "Zhōngwén", "ㄓㄨㄥ ㄨㄣˊ", "noun", "A1", "tiếng Trung", "Chinese (language)"),
+    ("中文", "中文", "zhōngwén", "ㄓㄨㄥ ㄨㄣˊ", "noun", "A1", "tiếng Trung", "Chinese (language)"),
     ("學", "学", "xué", "ㄒㄩㄝˊ", "verb", "A1", "học", "to learn"),
     ("學習", "学习", "xuéxí", "ㄒㄩㄝˊ ㄒㄧˊ", "verb", "A2", "học tập", "to study, to learn"),
     ("週末", "周末", "zhōumò", "ㄓㄡ ㄇㄛˋ", "noun", "A2", "cuối tuần", "weekend"),
@@ -179,7 +179,7 @@ LESSONS = [
                 "Mỗi ngày tôi học tiếng Trung.",
                 "I study Chinese every day.",
                 None,
-                [("我", "wǒ"), ("每天", "měitiān"), ("學習", "xuéxí"), ("中文", "Zhōngwén")],
+                [("我", "wǒ"), ("每天", "měitiān"), ("學習", "xuéxí"), ("中文", "zhōngwén")],
             ),
             (
                 "週末我想去圖書館。",
@@ -256,7 +256,7 @@ LESSONS = [
                 "Tôi học tiếng Trung.",
                 "I study Chinese.",
                 (2000, 4500),
-                [("我", "wǒ"), ("學習", "xuéxí"), ("中文", "Zhōngwén")],
+                [("我", "wǒ"), ("學習", "xuéxí"), ("中文", "zhōngwén")],
             ),
             (
                 "謝謝你。",

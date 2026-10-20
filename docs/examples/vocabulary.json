@@ -1,0 +1,39 @@
+{
+  "words": [
+    {
+      "traditional": "學習",
+      "simplified": "学习",
+      "pinyin": "xuéxí",
+      "zhuyin": "ㄒㄩㄝˊ ㄒㄧˊ",
+      "part_of_speech": "verb",
+      "level": "A2",
+      "audio_path": "vocabulary/xuexi.mp3",
+      "translations": {
+        "vi": ["học tập", "học"],
+        "en": ["to study", "to learn"]
+      },
+      "examples": [
+        {
+          "hanzi": "我每天學習中文。",
+          "pinyin": "wǒ měitiān xuéxí Zhōngwén.",
+          "zhuyin": "ㄨㄛˇ ㄇㄟˇ ㄊㄧㄢ ㄒㄩㄝˊ ㄒㄧˊ ㄓㄨㄥ ㄨㄣˊ。",
+          "translations": { "vi": "Mỗi ngày tôi học tiếng Trung.", "en": "I study Chinese every day." },
+          "audio_path": "vocabulary/examples/xuexi-1.mp3"
+        },
+        {
+          "hanzi": "學習需要耐心。",
+          "pinyin": "xuéxí xūyào nàixīn.",
+          "translations": { "vi": "Học tập cần kiên nhẫn.", "en": "Studying takes patience." }
+        }
+      ],
+      "groups": ["Daily life", "TOCFL Band A"]
+    },
+    {
+      "traditional": "女",
+      "pinyin": "nǚ",
+      "zhuyin": "ㄋㄩˇ",
+      "level": "A1",
+      "translations": { "vi": "nữ; phụ nữ", "en": "female; woman" }
+    }
+  ]
+}

@@ -7,7 +7,7 @@ from app.config import get_settings
 from app.db import engine
 from app.errors import install_error_handlers
 from app.logs import configure_logging, install_request_logging
-from app.routers import auth, health, me
+from app.routers import admin, auth, health, me
 from app.security import CSRF_HEADER, csrf_protect
 
 
@@ -42,6 +42,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix="/api")
     app.include_router(auth.router, prefix="/api")
     app.include_router(me.router, prefix="/api")
+    app.include_router(admin.router, prefix="/api")
     return app
 
 

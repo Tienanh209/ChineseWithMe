@@ -32,6 +32,16 @@ docker compose they arrive in Mailpit at http://localhost:8025.
 
 Google sign-in needs `GOOGLE_CLIENT_ID` (see `.env.example`); without it the Google button is hidden.
 
+## Import vocabulary
+
+```sh
+cd backend
+uv run python -m app.cli import-vocab ../docs/examples/vocabulary.csv --dry-run
+uv run python -m app.cli import-vocab ../docs/examples/vocabulary.csv --group "TOCFL Band A"
+```
+
+CSV or JSON, safe to re-run. Format and rules: [docs/vocabulary-import.md](docs/vocabulary-import.md).
+
 ## Checks
 
 ```sh

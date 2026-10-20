@@ -30,7 +30,9 @@ backend/app/
   schemas/             Pydantic request/response models
   routers/             one router per area, mounted under /api
   services/            business logic (sessions, passwords, storage, ...)
-  seed.py cli.py       python -m app.cli seed [--reset]
+  services/vocab_import/  M9a: parse.py (CSV/JSON), schema.py (rules), load.py (idempotent upsert, report)
+  services/pinyin.py   pinyin/zhuyin validation, pinyin_key (mirrors the DB column), search_key (rule 10)
+  seed.py cli.py       python -m app.cli seed [--reset] | import-vocab FILE [--dry-run] [--strict] [--group N]
 backend/tests/         pytest against a real migrated Postgres, per-test rollback
 frontend/src/          api/ (client, types), stores/, components/, views/, i18n/
 dev-audio/             local stand-in for the audio CDN
@@ -77,6 +79,14 @@ Backend tests need a migrated, empty database: `TEST_DATABASE_URL` (default
 7. Exercise answers: check the question belongs to the attempt's lesson.
 8. is_correct and score are computed on the server.
 9. lessons.level equals its category's level.
-10. Pinyin search: lowercase, strip spaces and apostrophes, map ü and v to u, match pinyin_normalized.
-    Importers NFC-normalise and lowercase pinyin tone vowels so the generated column matches.
+10. Pinyin search: `services/pinyin.search_key()` (NFC, lowercase, strip spaces and apostrophes, ü and v to u),
+    then match pinyin_normalized. The importer stores pinyin NFC and lowercase; the generated column also
+    handles capital tone vowels itself (fixed in 000001), and tests/test_pinyin.py checks Python and SQL agree.
 11. Hanzi search is prefix-only (indexed); escape `%` and `_` in LIKE patterns.
+
+## Vocabulary import (M9a)
+
+Format, rules and re-import behaviour: `docs/vocabulary-import.md` (examples in `docs/examples/` are
+imported by the tests). Words are keyed by (traditional, pinyin). Blank optional fields never erase stored
+values; meanings sync per language; examples sync when given; groups are additive. Admin endpoint:
+`POST /api/admin/vocabulary/import` (5 MB / 5000 rows; the CLI has no limit).
