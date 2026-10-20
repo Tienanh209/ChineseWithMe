@@ -16,6 +16,8 @@ const me: Me = {
   ui_lang: 'en',
   timezone: 'Asia/Ho_Chi_Minh',
   role: 'user',
+  has_password: true,
+  google_linked: false,
 }
 
 beforeEach(() => {

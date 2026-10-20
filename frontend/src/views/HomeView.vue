@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 import { ApiError } from '@/api/client'
 import LevelPicker from '@/components/LevelPicker.vue'
 import RubyText, { type RubyPart } from '@/components/RubyText.vue'
+import { errorText } from '@/lib/errors'
 import { usePrefsStore, type Theme } from '@/stores/prefs'
 import { useSessionStore } from '@/stores/session'
 
 const { t } = useI18n()
 const prefs = usePrefsStore()
 const session = useSessionStore()
-const isDev = import.meta.env.DEV
 
 const annotation = ref<'pinyin' | 'zhuyin' | 'none'>('zhuyin')
 const sample: RubyPart[] = [
@@ -23,13 +24,12 @@ const sample: RubyPart[] = [
 const themes: Theme[] = ['system', 'light', 'dark']
 const error = ref<string | null>(null)
 
-async function run(action: () => Promise<unknown>) {
+async function setLevel(level: Parameters<typeof prefs.setLevel>[0]) {
   error.value = null
   try {
-    await action()
+    await prefs.setLevel(level)
   } catch (e) {
-    const code = e instanceof ApiError ? e.code : ''
-    error.value = code === 'network_error' ? t('errors.network_error') : t('errors.generic')
+    error.value = e instanceof ApiError ? errorText(e) : t('errors.generic')
   }
 }
 
@@ -37,6 +37,7 @@ const chip = (active: boolean) =>
   active
     ? 'border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-600/20 dark:text-brand-100'
     : 'border-stone-300 dark:border-stone-700'
+const linkButton = 'inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-medium'
 </script>
 
 <template>
@@ -73,8 +74,9 @@ const chip = (active: boolean) =>
       <LevelPicker
         :model-value="prefs.level"
         :label="t('prefs.level')"
-        @update:model-value="run(() => prefs.setLevel($event))"
+        @update:model-value="setLevel"
       />
+      <p v-if="error" role="alert" class="text-sm text-brand-600">{{ error }}</p>
     </section>
 
     <section class="space-y-2">
@@ -95,28 +97,28 @@ const chip = (active: boolean) =>
     </section>
 
     <section class="space-y-2 text-sm">
-      <template v-if="session.me">
-        <p>{{ t('account.signedInAs', { name: session.me.display_name ?? session.me.email }) }}</p>
-        <button
-          type="button"
-          class="min-h-11 rounded-lg border border-stone-300 px-4 dark:border-stone-700"
-          @click="run(session.logout)"
-        >
-          {{ t('account.signOut') }}
-        </button>
-      </template>
+      <p v-if="session.me">
+        {{ t('account.signedInAs', { name: session.me.display_name ?? session.me.email }) }}
+      </p>
       <template v-else>
         <p class="text-stone-600 dark:text-stone-400">{{ t('prefs.savedLocally') }}</p>
-        <button
-          v-if="isDev"
-          type="button"
-          class="min-h-11 rounded-lg bg-brand-600 px-4 font-medium text-white hover:bg-brand-700"
-          @click="run(() => session.devLogin())"
-        >
-          {{ t('account.devSignIn') }}
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <RouterLink
+            :to="{ name: 'login' }"
+            :class="linkButton"
+            class="bg-brand-600 text-white hover:bg-brand-700"
+          >
+            {{ t('home.signIn') }}
+          </RouterLink>
+          <RouterLink
+            :to="{ name: 'register' }"
+            :class="linkButton"
+            class="border border-stone-300 dark:border-stone-700"
+          >
+            {{ t('home.createAccount') }}
+          </RouterLink>
+        </div>
       </template>
-      <p v-if="error" role="alert" class="text-brand-600">{{ error }}</p>
     </section>
   </div>
 </template>

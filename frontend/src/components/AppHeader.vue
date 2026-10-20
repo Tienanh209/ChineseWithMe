@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { LEVELS, UI_LANGS, type Level, type UiLang } from '@/api/types'
 import { usePrefsStore } from '@/stores/prefs'
+import AccountButton from './AccountButton.vue'
 
 const { t } = useI18n()
 const prefs = usePrefsStore()
@@ -42,6 +43,8 @@ const selectClass =
           {{ lang === 'vi' ? 'Tiếng Việt' : 'English' }}
         </option>
       </select>
+
+      <AccountButton />
     </div>
   </header>
 </template>

@@ -12,7 +12,7 @@ Feature backlog and milestones: `FEATURES.md`. Schema: `migrations/000001_init.u
 | Migrations | **golang-migrate**, SQL files in `migrations/`. No Alembic. ORM models map onto the tables and never create them; `backend/tests/test_models_match_db.py` fails on drift. `000001` may be edited in place until the first deploy, then only new migrations. |
 | Audio | Columns are **`audio_path`**: a bucket-relative key such as `lessons/12/main.mp3`, never a URL (CHECK rejects `scheme:` and a leading `/`). The API builds URLs with `services/storage.audio_url()` from `AUDIO_BASE_URL`. Prod: S3 + CDN. Dev: nginx serves `dev-audio/` at `/audio`. |
 | Admin | `users.role` in (`user`, `admin`) |
-| Auth | Server-side sessions (`sessions` table, SHA-256 of the token only), httpOnly `sid` cookie + readable `csrf_token` cookie (HMAC of the session token) echoed in `X-CSRF-Token`. Email tokens in `auth_tokens`. argon2id. |
+| Auth | Server-side sessions (`sessions` table, SHA-256 of the token only), httpOnly `sid` cookie + readable `csrf_token` cookie (HMAC of the session token) echoed in `X-CSRF-Token`. Email tokens in `auth_tokens`. argon2id. Login rate limits are in memory (per process): move to Postgres or Redis before running several API replicas. |
 | "Today" | `users.timezone` (IANA) defines the day for streaks and daily new-card caps. |
 | Lessons | `is_published` defaults to false; publish after validation. |
 | Games | Log only: `game_sessions` + `vocab_review_logs (source='game')`; games do not change `user_vocab_progress`. |
@@ -60,14 +60,17 @@ Backend tests need a migrated, empty database: `TEST_DATABASE_URL` (default
 - Python: ruff (line length 120), `ruff format`. TS/Vue: prettier, oxlint, eslint, vue-tsc.
 - UI: mobile first, touch targets >= 44px (`min-h-11`), every string through vue-i18n (vi and en),
   Chinese text inside `lang="zh-Hant"` so it uses Noto Sans TC. `RubyText` renders annotations.
-- `/api/dev/login` exists only with `ENV=dev`; it is removed when M1 lands.
+- Email: `services/mailer.py` (smtp, console, memory). Tests use the memory outbox (`mailer.outbox`).
+- Google in tests: override `get_google_verifier` with `FakeGoogle` (conftest). `test_google_verifier.py` runs real signed JWTs through google-auth.
 
 ## Rules the database does not enforce (FEATURES.md has the full text)
 
 1. Every question has exactly one correct choice (DB prevents two, not zero).
 2. Every user keeps a login method: password_hash or a user_identities row.
 3. Google: match on (provider, sub). Auto-link by email only if Google `email_verified` AND local
-   `email_verified_at` is set; otherwise require the password, or clear password_hash and all sessions.
+   `email_verified_at` is set. If Google verified but the local account is not, the local account is taken
+   over (password_hash cleared, all sessions deleted) because Google proved the address. If Google did NOT
+   verify it, never link: the user signs in with the password and links from the profile (password required).
 4. Concurrent first Google logins: catch the unique violation, select again.
 5. segment_vocabulary offsets: 0-based, end-exclusive, Unicode code points, computed at import.
 6. Audio lessons: every segment has start_ms and end_ms; reading lessons: both NULL.

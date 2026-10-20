@@ -1,12 +1,55 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { safeNext } from '@/lib/redirect'
+import { useSessionStore } from '@/stores/session'
 import HomeView from '@/views/HomeView.vue'
 
 const ComingSoon = () => import('@/views/ComingSoonView.vue')
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    /** Sign-in and register pages: skipped when already signed in. */
+    guestOnly?: boolean
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', name: 'home', component: HomeView },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/AuthView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/AuthView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/verify-email',
+      name: 'verify-email',
+      component: () => import('@/views/VerifyEmailView.vue'),
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/views/ForgotPasswordView.vue'),
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('@/views/ResetPasswordView.vue'),
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/views/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
     // Placeholders, replaced milestone by milestone.
     { path: '/lookup', name: 'lookup', component: ComingSoon, props: { titleKey: 'nav.lookup' } },
     {
@@ -30,6 +73,16 @@ const router = createRouter({
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
+})
+
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth && !to.meta.guestOnly) return
+  const session = useSessionStore()
+  await session.ensureLoaded().catch(() => {}) // API down: treat as signed out
+  if (to.meta.requiresAuth && !session.me) {
+    return { name: 'login', query: { next: to.fullPath } }
+  }
+  if (to.meta.guestOnly && session.me) return safeNext(to.query.next) ?? '/'
 })
 
 export default router

@@ -13,7 +13,7 @@ UI in Vietnamese and English.
 With Docker:
 
 ```sh
-docker compose up --build                          # http://localhost:8080
+docker compose up --build                          # http://localhost:8080, emails at :8025
 docker compose run --rm api python -m app.cli seed
 ```
 
@@ -26,7 +26,11 @@ make api             # http://localhost:8000/api/docs
 make web             # http://localhost:5173
 ```
 
-Until accounts land (M1), sign in with the "test user (dev)" button on the home page.
+Sign in with `test@example.com` / `password123` after seeding, or create an account. With
+`MAIL_BACKEND=console` (default on the host) verification and reset links appear in the API log; in
+docker compose they arrive in Mailpit at http://localhost:8025.
+
+Google sign-in needs `GOOGLE_CLIENT_ID` (see `.env.example`); without it the Google button is hidden.
 
 ## Checks
 

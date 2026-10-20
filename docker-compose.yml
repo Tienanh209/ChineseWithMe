@@ -1,4 +1,4 @@
-# Local development stack: http://localhost:8080 (SPA + /api + /audio).
+# Local development stack: http://localhost:8080 (SPA + /api + /audio), mail inbox on :8025.
 #   docker compose up --build
 #   docker compose run --rm api python -m app.cli seed
 name: chinese-learning
@@ -40,11 +40,24 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       AUDIO_BASE_URL: ${AUDIO_BASE_URL:-/audio}
       LOG_JSON: ${LOG_JSON:-true}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      MAIL_BACKEND: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
     ports:
       - "8000:8000"
     depends_on:
       migrate:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+
+  # Catches outgoing mail (verification and reset links): http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "8025:8025"
 
   web:
     build: ./frontend

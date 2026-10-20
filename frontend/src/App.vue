@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterView } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import AppNav from '@/components/AppNav.vue'
+import VerifyBanner from '@/components/VerifyBanner.vue'
 import { usePrefsStore } from '@/stores/prefs'
 import { useSessionStore } from '@/stores/session'
 
@@ -19,7 +20,7 @@ onMounted(() => {
   prefersDark.value = media?.matches ?? false
   media?.addEventListener('change', onMediaChange)
   // Not signed in or API down: keep local preferences.
-  session.load().catch(() => {})
+  session.ensureLoaded().catch(() => {})
 })
 onUnmounted(() => media?.removeEventListener('change', onMediaChange))
 
@@ -33,6 +34,7 @@ watchEffect(() => {
 
 <template>
   <AppHeader />
+  <VerifyBanner />
   <AppNav />
   <main class="mx-auto max-w-3xl px-4 pt-4 pb-24 sm:pb-8">
     <RouterView />

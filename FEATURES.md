@@ -61,13 +61,13 @@ M0 → M1 → M9a (vocabulary import) → M2 → M3 → M9b (lesson import) → 
 
 ## M1. Accounts (`users`, `user_identities`)
 
-- [ ] Email + password sign-up and login. Argon2id or bcrypt. Rate-limit login. Email verification sets `email_verified_at`.
-- [ ] Sessions or JWT in httpOnly secure cookies, with CSRF protection.
-- [ ] Google sign-in. The frontend uses Google Identity Services (button and One Tap). The backend verifies the ID token (signature, `iss`, `aud`, `exp`) and reads `sub`, `email`, `email_verified`, `name`, `picture`.
+- [x] Email + password sign-up and login. Argon2id or bcrypt. Rate-limit login. Email verification sets `email_verified_at`.
+- [x] Sessions or JWT in httpOnly secure cookies, with CSRF protection.
+- [x] Google sign-in. The frontend uses Google Identity Services (button and One Tap). The backend verifies the ID token (signature, `iss`, `aud`, `exp`) and reads `sub`, `email`, `email_verified`, `name`, `picture`.
   - Done when: a first login with an unknown email creates `users` (`email_verified_at = now()` if verified, `display_name`, `avatar_url`, `username` NULL, `password_hash` NULL) and `user_identities` in one transaction; a second login reuses the same user; two simultaneous first logins create exactly one user.
   - Done when: the linking rules (3 and 4 above) have tests, including the unverified-local-account case.
-- [ ] Profile: display name, avatar, optional username (3 to 32 characters, case-insensitive unique), target level, UI language, set or change password, link or unlink Google (never the last method).
-- [ ] Delete account. `ON DELETE CASCADE` removes the user's data.
+- [x] Profile: display name, avatar, optional username (3 to 32 characters, case-insensitive unique), target level, UI language, set or change password, link or unlink Google (never the last method).
+- [x] Delete account. `ON DELETE CASCADE` removes the user's data.
 
 ## M2. Vocabulary look-up (`vocabulary`, `vocabulary_translations`, `vocabulary_examples`, `vocab_groups`, `vocab_group_items`)
 

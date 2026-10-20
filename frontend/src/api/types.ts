@@ -15,6 +15,28 @@ export interface Me {
   ui_lang: string
   timezone: string
   role: 'user' | 'admin'
+  has_password: boolean
+  google_linked: boolean
 }
 
-export type MePatch = Partial<Pick<Me, 'target_level' | 'timezone'> & { ui_lang: UiLang }>
+/** Omitted fields stay unchanged; only display_name, username and avatar_url accept null. */
+export interface MePatch {
+  display_name?: string | null
+  username?: string | null
+  avatar_url?: string | null
+  target_level?: Level
+  ui_lang?: UiLang
+  timezone?: string
+}
+
+export interface RegisterBody {
+  email: string
+  password: string
+  display_name?: string
+  ui_lang?: UiLang
+  target_level?: Level
+}
+
+export interface AuthConfig {
+  google_client_id: string | null
+}
