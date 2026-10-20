@@ -21,6 +21,24 @@ class Settings(BaseSettings):
     session_ttl_days: int = 30
     cookie_secure: bool = True
 
+    # Where the SPA is served; used for links in emails.
+    public_url: str = "http://localhost:5173"
+
+    # OAuth client ID of the Google Identity Services button. Empty disables Google sign-in.
+    google_client_id: str = ""
+
+    # "console" logs the message (dev only), "smtp" sends it, "memory" keeps it in a list (tests).
+    mail_backend: Literal["console", "smtp", "memory"] = "console"
+    mail_from: str = "Học tiếng Trung <no-reply@localhost>"
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_user: str = ""
+    smtp_password: SecretStr = SecretStr("")
+    smtp_starttls: bool = False
+
+    verify_token_ttl_hours: int = 48
+    reset_token_ttl_minutes: int = 60
+
     # Public base for bucket-relative audio_path values: "/audio" (served by nginx from
     # dev-audio/ in development) or the CDN in production, e.g. https://cdn.example.com/audio
     audio_base_url: str = "/audio"
@@ -39,6 +57,8 @@ class Settings(BaseSettings):
                 raise ValueError("SECRET_KEY must be set to a random value of at least 32 characters in prod")
             if not self.cookie_secure:
                 raise ValueError("COOKIE_SECURE must be true in prod")
+            if self.mail_backend != "smtp":
+                raise ValueError("MAIL_BACKEND must be smtp in prod")
         return self
 
 

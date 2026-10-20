@@ -27,4 +27,4 @@ def test_prod_refuses_default_secret_and_insecure_cookies():
         Settings(env="prod")
     with pytest.raises(ValidationError):
         Settings(env="prod", secret_key=SecretStr("x" * 40), cookie_secure=False)
-    Settings(env="prod", secret_key=SecretStr("x" * 40), cookie_secure=True)
+    Settings(env="prod", secret_key=SecretStr("x" * 40), cookie_secure=True, mail_backend="smtp")

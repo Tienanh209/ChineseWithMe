@@ -28,23 +28,28 @@ _HTTP_CODES = {
 
 
 class AppError(Exception):
-    def __init__(self, status: int, code: str, message: str, details: Any = None) -> None:
+    def __init__(
+        self, status: int, code: str, message: str, details: Any = None, headers: dict[str, str] | None = None
+    ) -> None:
         super().__init__(message)
         self.status = status
         self.code = code
         self.message = message
         self.details = details
+        self.headers = headers
 
 
-def error_response(request: Request, status: int, code: str, message: str, details: Any = None) -> JSONResponse:
+def error_response(
+    request: Request, status: int, code: str, message: str, details: Any = None, headers: dict[str, str] | None = None
+) -> JSONResponse:
     request_id = getattr(request.state, "request_id", None)
     body = {"error": {"code": code, "message": message, "details": details, "request_id": request_id}}
-    headers = {"X-Request-ID": request_id} if request_id else None
-    return JSONResponse(body, status_code=status, headers=headers)
+    all_headers = {**(headers or {}), **({"X-Request-ID": request_id} if request_id else {})}
+    return JSONResponse(body, status_code=status, headers=all_headers or None)
 
 
 async def _app_error(request: Request, exc: AppError) -> JSONResponse:
-    return error_response(request, exc.status, exc.code, exc.message, exc.details)
+    return error_response(request, exc.status, exc.code, exc.message, exc.details, exc.headers)
 
 
 async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
