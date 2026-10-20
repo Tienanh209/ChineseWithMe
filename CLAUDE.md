@@ -31,6 +31,7 @@ backend/app/
   routers/             one router per area, mounted under /api
   services/            business logic (sessions, passwords, storage, ...)
   services/vocab_import/  M9a: parse.py (CSV/JSON), schema.py (rules), load.py (idempotent upsert, report)
+  services/vocab_search.py  M2: build_statement (query classification, ranking), search
   services/pinyin.py   pinyin/zhuyin validation, pinyin_key (mirrors the DB column), search_key (rule 10)
   seed.py cli.py       python -m app.cli seed [--reset] | import-vocab FILE [--dry-run] [--strict] [--group N]
 backend/tests/         pytest against a real migrated Postgres, per-test rollback
@@ -90,3 +91,14 @@ Format, rules and re-import behaviour: `docs/vocabulary-import.md` (examples in 
 imported by the tests). Words are keyed by (traditional, pinyin). Blank optional fields never erase stored
 values; meanings sync per language; examples sync when given; groups are additive. Admin endpoint:
 `POST /api/admin/vocabulary/import` (5 MB / 5000 rows; the CLI has no limit).
+
+## Look-up (M2)
+
+`GET /api/vocab` classifies the query: Chinese characters (exact, prefix, contains; traditional or simplified),
+Bopomofo (zhuyin column, spaces ignored), otherwise Latin text tried as pinyin (`search_key`) and as a meaning
+in any language (word-start match, two letters or more). Rank, best first: the exact typed reading (tones
+included), same letters, prefix, a word inside a meaning, contains. Meanings use uncorrelated `IN (subquery)`,
+never a correlated `EXISTS` (see docs/performance.md). `POST /api/study-list/{id}` never resets progress.
+Frontend: the look-up page keeps its state in the URL (`?q=&level=&group=&page=`); the script (繁/简) and
+reading (zhuyin/pinyin) toggles live in the prefs store and apply to every word; "Back to search" is a link to
+the last look-up URL (`lib/lastLookup.ts`), not `router.back()`.

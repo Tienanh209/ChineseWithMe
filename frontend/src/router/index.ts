@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { rememberLookup } from '@/lib/lastLookup'
 import { safeNext } from '@/lib/redirect'
 import { useSessionStore } from '@/stores/session'
 import HomeView from '@/views/HomeView.vue'
@@ -51,7 +52,13 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     // Placeholders, replaced milestone by milestone.
-    { path: '/lookup', name: 'lookup', component: ComingSoon, props: { titleKey: 'nav.lookup' } },
+    { path: '/lookup', name: 'lookup', component: () => import('@/views/LookupView.vue') },
+    {
+      path: '/vocab/:id(\\d+)',
+      name: 'vocab',
+      component: () => import('@/views/VocabDetailView.vue'),
+      props: (route) => ({ id: Number(route.params.id) }),
+    },
     {
       path: '/flashcards',
       name: 'flashcards',
@@ -83,6 +90,10 @@ router.beforeEach(async (to) => {
     return { name: 'login', query: { next: to.fullPath } }
   }
   if (to.meta.guestOnly && session.me) return safeNext(to.query.next) ?? '/'
+})
+
+router.afterEach((to) => {
+  if (to.name === 'lookup') rememberLookup(to.fullPath)
 })
 
 export default router

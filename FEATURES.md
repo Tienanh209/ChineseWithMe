@@ -71,12 +71,12 @@ M0 → M1 → M9a (vocabulary import) → M2 → M3 → M9b (lesson import) → 
 
 ## M2. Vocabulary look-up (`vocabulary`, `vocabulary_translations`, `vocabulary_examples`, `vocab_groups`, `vocab_group_items`)
 
-- [ ] Search endpoint with pagination and filters for level and group.
+- [x] Search endpoint with pagination and filters for level and group.
   - Done when: `nihao`, `ni hao`, `nǐ hǎo` find 你好; `nv` finds 女; hanzi prefix `學` finds 學習; meaning `study` and `học` find matching words via `vocabulary_translations`.
   - Done when: both readings of 行 appear as separate results.
-- [ ] Detail page: readings, pinyin ↔ zhuyin toggle, traditional ↔ simplified toggle, translations ordered by `sort_order` with the user's `ui_lang` first, examples with audio, "Add to study list".
-- [ ] Browse by level and by vocab group.
-- [ ] "Add to study list" creates a `user_vocab_progress` row (`status = 'new'`, `next_review_at = now()`).
+- [x] Detail page: readings, pinyin ↔ zhuyin toggle, traditional ↔ simplified toggle, translations ordered by `sort_order` with the user's `ui_lang` first, examples with audio, "Add to study list".
+- [x] Browse by level and by vocab group.
+- [x] "Add to study list" creates a `user_vocab_progress` row (`status = 'new'`, `next_review_at = now()`).
 
 ## M3. Flashcards with spaced repetition (`user_vocab_progress`, `vocab_review_logs`)
 

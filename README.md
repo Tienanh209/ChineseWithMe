@@ -42,6 +42,10 @@ uv run python -m app.cli import-vocab ../docs/examples/vocabulary.csv --group "T
 
 CSV or JSON, safe to re-run. Format and rules: [docs/vocabulary-import.md](docs/vocabulary-import.md).
 
+## Performance
+
+Look-up timings on 30,000 words and how to re-run them: [docs/performance.md](docs/performance.md).
+
 ## Checks
 
 ```sh

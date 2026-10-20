@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Me } from '@/api/types'
+import { forgetLookup, lastLookup } from '@/lib/lastLookup'
 import { useSessionStore } from '@/stores/session'
 import router from '..'
 
@@ -52,5 +53,19 @@ describe('route guards', () => {
       await router.push(path)
       expect(router.currentRoute.value.path).toBe(path)
     }
+  })
+})
+
+describe('look-up memory', () => {
+  it('remembers the look-up page with its query, for "Back to search"', async () => {
+    forgetLookup()
+    signedOut()
+    expect(lastLookup()).toBe('/lookup')
+    await router.push('/lookup?q=xue&page=2')
+    await router.push('/vocab/7')
+    expect(lastLookup()).toBe('/lookup?q=xue&page=2') // a word page does not overwrite it
+    await router.push('/lookup?level=A1')
+    expect(lastLookup()).toBe('/lookup?level=A1')
+    forgetLookup()
   })
 })
