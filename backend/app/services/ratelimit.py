@@ -66,8 +66,10 @@ register_by_ip = RateLimiter("register_ip", limit=10, window_seconds=3600)
 email_by_ip = RateLimiter("email_ip", limit=10, window_seconds=3600)
 email_by_address = RateLimiter("email_address", limit=3, window_seconds=3600)
 google_failures_by_ip = RateLimiter("google_ip", limit=20, window_seconds=15 * 60)
+# Search runs trigram scans: generous for a person typing, a brake for a script.
+search_by_ip = RateLimiter("search_ip", limit=120, window_seconds=60)
 
-ALL = [login_by_ip, login_by_email, register_by_ip, email_by_ip, email_by_address, google_failures_by_ip]
+ALL = [login_by_ip, login_by_email, register_by_ip, email_by_ip, email_by_address, google_failures_by_ip, search_by_ip]
 
 
 def reset_all() -> None:
