@@ -62,8 +62,8 @@ const router = createRouter({
     {
       path: '/flashcards',
       name: 'flashcards',
-      component: ComingSoon,
-      props: { titleKey: 'nav.flashcards' },
+      component: () => import('@/views/FlashcardsView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/lessons',

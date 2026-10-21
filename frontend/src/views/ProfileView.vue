@@ -61,6 +61,22 @@ const saveDetails = () =>
 // Learning preferences (saved to the account by the prefs store) ---------------
 const setLevel = (level: Parameters<typeof prefs.setLevel>[0]) =>
   run('learning', () => prefs.setLevel(level))
+const dailyNew = ref(String(session.me?.daily_new_cards ?? 20))
+watch(
+  () => session.me?.daily_new_cards,
+  (value) => {
+    if (value !== undefined) dailyNew.value = String(value)
+  },
+)
+const saveDailyNew = () =>
+  run('learning', async () => {
+    const value = Number(dailyNew.value)
+    if (dailyNew.value.trim() === '' || !Number.isInteger(value) || value < 0 || value > 200) {
+      throw new Error('daily_new_cards out of range') // shown as the generic error
+    }
+    await session.update({ daily_new_cards: value })
+    return t('common.saved')
+  })
 const setLang = (event: Event) =>
   run('learning', () => prefs.setLang((event.target as HTMLSelectElement).value as UiLang))
 
@@ -211,7 +227,24 @@ const section =
           {{ lang === 'vi' ? 'Tiếng Việt' : 'English' }}
         </option>
       </select>
-      <p v-if="messages.learning" role="alert" class="text-sm text-brand-600">
+      <form class="space-y-2" novalidate @submit.prevent="saveDailyNew">
+        <FormField
+          v-model="dailyNew"
+          :label="t('profile.dailyNewCards')"
+          type="number"
+          inputmode="numeric"
+          :hint="t('profile.dailyNewCardsHint')"
+        />
+        <BaseButton type="submit" variant="secondary" :loading="busy === 'learning'">
+          {{ t('common.save') }}
+        </BaseButton>
+      </form>
+      <p
+        v-if="messages.learning"
+        :role="messages.learning.ok ? 'status' : 'alert'"
+        :class="messages.learning.ok ? '' : 'text-brand-600'"
+        class="text-sm"
+      >
         {{ messages.learning.text }}
       </p>
     </section>

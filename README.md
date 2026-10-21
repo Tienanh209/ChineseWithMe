@@ -44,7 +44,7 @@ CSV or JSON, safe to re-run. Format and rules: [docs/vocabulary-import.md](docs/
 
 ## Performance
 
-Look-up timings on 30,000 words and how to re-run them: [docs/performance.md](docs/performance.md).
+Look-up and flashcard timings on 30,000 words and 317,000 cards, and how to re-run them: [docs/performance.md](docs/performance.md).
 
 ## Checks
 

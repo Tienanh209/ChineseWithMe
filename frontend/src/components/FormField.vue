@@ -11,7 +11,7 @@ const props = withDefaults(
     error?: string
     required?: boolean
     maxlength?: number
-    inputmode?: 'text' | 'email' | 'url'
+    inputmode?: 'text' | 'email' | 'url' | 'numeric'
   }>(),
   { type: 'text' },
 )

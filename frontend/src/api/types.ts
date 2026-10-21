@@ -15,6 +15,7 @@ export interface Me {
   ui_lang: string
   timezone: string
   role: 'user' | 'admin'
+  daily_new_cards: number
   has_password: boolean
   google_linked: boolean
 }
@@ -27,6 +28,7 @@ export interface MePatch {
   target_level?: Level
   ui_lang?: UiLang
   timezone?: string
+  daily_new_cards?: number
 }
 
 export interface RegisterBody {

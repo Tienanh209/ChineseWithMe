@@ -80,10 +80,10 @@ M0 → M1 → M9a (vocabulary import) → M2 → M3 → M9b (lesson import) → 
 
 ## M3. Flashcards with spaced repetition (`user_vocab_progress`, `vocab_review_logs`)
 
-- [ ] Session builder: due cards are `next_review_at <= now()` (index on `(user_id, next_review_at)`), plus a daily cap on new cards, filterable by group or level.
-- [ ] Card UI: hanzi on the front; pinyin, zhuyin, meaning and an example on the back; audio. Four rating buttons: 1 again, 2 hard, 3 good, 4 easy.
-- [ ] Scheduler as a pure, unit-tested function (SM-2 style). It updates `status`, `ease_factor` (minimum 1.3), `interval_days`, `repetitions`, `lapses`, `next_review_at`, `last_reviewed_at`. Each answer inserts a `vocab_review_logs` row with `source = 'flashcard'` in the same transaction.
-- [ ] Daily stats: cards due, new cards today, streak from `vocab_review_logs`.
+- [x] Session builder: due cards are `next_review_at <= now()` (index on `(user_id, next_review_at)`), plus a daily cap on new cards, filterable by group or level.
+- [x] Card UI: hanzi on the front; pinyin, zhuyin, meaning and an example on the back; audio. Four rating buttons: 1 again, 2 hard, 3 good, 4 easy.
+- [x] Scheduler as a pure, unit-tested function (SM-2 style). It updates `status`, `ease_factor` (minimum 1.3), `interval_days`, `repetitions`, `lapses`, `next_review_at`, `last_reviewed_at`. Each answer inserts a `vocab_review_logs` row with `source = 'flashcard'` in the same transaction.
+- [x] Daily stats: cards due, new cards today, streak from `vocab_review_logs`.
 
 ## M4. Vocabulary games (`game_sessions`, `vocab_review_logs`)
 

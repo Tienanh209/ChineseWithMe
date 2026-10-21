@@ -1,14 +1,22 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { vi } from 'vitest'
+import { afterEach, vi } from 'vitest'
 import type { Component } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { Me } from '@/api/types'
+import type { Card, SessionResponse, Stats } from '@/api/flashcards'
 import type { VocabDetail, VocabItem } from '@/api/vocab'
 import { i18n } from '@/i18n'
 import { useSessionStore } from '@/stores/session'
 
 export const stub = { template: '<div />' }
+
+// Everything mounted through mountAt is unmounted after each test. Components that listen on `window`
+// (the flashcard keyboard handler) would otherwise keep reacting to later tests' key presses.
+const mounted: VueWrapper[] = []
+afterEach(() => {
+  for (const wrapper of mounted.splice(0)) wrapper.unmount()
+})
 
 export function makeRouter(routes: Parameters<typeof createRouter>[0]['routes']) {
   return createRouter({ history: createMemoryHistory(), routes })
@@ -28,6 +36,7 @@ export async function mountAt(
   await router.push(path)
   await router.isReady()
   const wrapper = mount(component, { props, global: { plugins: [pinia, i18n, router] } })
+  mounted.push(wrapper)
   await flushPromises()
   return { wrapper, router }
 }
@@ -43,6 +52,7 @@ export const signedInUser: Me = {
   ui_lang: 'en',
   timezone: 'Asia/Ho_Chi_Minh',
   role: 'user',
+  daily_new_cards: 20,
   has_password: true,
   google_linked: false,
 }
@@ -140,3 +150,65 @@ export function deferred<T>() {
   const promise = new Promise<T>((r) => (resolve = r))
   return { promise, resolve }
 }
+
+export function card(overrides: Partial<Card> = {}): Card {
+  return {
+    vocabulary_id: 1,
+    traditional: '學習',
+    simplified: '学习',
+    pinyin: 'xuéxí',
+    zhuyin: 'ㄒㄩㄝˊ ㄒㄧˊ',
+    part_of_speech: 'verb',
+    level: 'A2',
+    audio_url: null,
+    meanings: { vi: ['học tập'], en: ['to study', 'to learn'] },
+    example: null,
+    status: 'review',
+    is_new: false,
+    interval_days: 6,
+    repetitions: 2,
+    next: [
+      { rating: 1, interval_days: 0, due_at: new Date(Date.now() + 10 * 60000).toISOString() },
+      { rating: 2, interval_days: 7, due_at: '2026-10-28T00:00:00+07:00' },
+      { rating: 3, interval_days: 15, due_at: '2026-11-05T00:00:00+07:00' },
+      { rating: 4, interval_days: 50, due_at: '2026-12-10T00:00:00+07:00' },
+    ],
+    ...overrides,
+  }
+}
+
+export function sessionOf(
+  cards: Card[],
+  overrides: Partial<SessionResponse> = {},
+): SessionResponse {
+  return {
+    cards,
+    due_total: cards.filter((c) => !c.is_new).length,
+    new_waiting: cards.filter((c) => c.is_new).length,
+    new_allowance: 20,
+    new_today: 0,
+    daily_new_cards: 20,
+    ...overrides,
+  }
+}
+
+export function statsOf(overrides: Partial<Stats> = {}): Stats {
+  return {
+    due_now: 3,
+    new_waiting: 5,
+    new_allowance: 20,
+    new_available: 5,
+    new_today: 2,
+    daily_new_cards: 20,
+    reviewed_today: 7,
+    studied_today: true,
+    streak_days: 4,
+    total_cards: 40,
+    ...overrides,
+  }
+}
+
+export const press = (key: string, init: KeyboardEventInit = {}) =>
+  window.dispatchEvent(
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }),
+  )

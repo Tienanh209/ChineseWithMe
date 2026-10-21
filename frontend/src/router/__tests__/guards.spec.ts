@@ -31,6 +31,16 @@ describe('route guards', () => {
     expect(router.currentRoute.value.query.next).toBe('/profile')
   })
 
+  it('keeps flashcards for signed-in users, and brings you back after signing in', async () => {
+    signedOut()
+    await router.push('/flashcards')
+    expect(router.currentRoute.value.name).toBe('login')
+    expect(router.currentRoute.value.query.next).toBe('/flashcards')
+    signedIn()
+    await router.push('/flashcards')
+    expect(router.currentRoute.value.name).toBe('flashcards')
+  })
+
   it('lets signed-in users into /profile', async () => {
     signedIn()
     await router.push('/profile')

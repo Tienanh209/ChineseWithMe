@@ -16,6 +16,7 @@ const me: Me = {
   ui_lang: 'en',
   timezone: 'Asia/Ho_Chi_Minh',
   role: 'user',
+  daily_new_cards: 20,
   has_password: true,
   google_linked: false,
 }
