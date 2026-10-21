@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, ForeignKey, LargeBinary, Text
+from sqlalchemy import BigInteger, ForeignKey, LargeBinary, SmallInteger, Text
 from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,6 +21,7 @@ class User(Base):
     ui_lang: Mapped[str] = mapped_column(Text, server_default=db_default())
     timezone: Mapped[str] = mapped_column(Text, server_default=db_default())
     role: Mapped[str] = mapped_column(Text, server_default=db_default())
+    daily_new_cards: Mapped[int] = mapped_column(SmallInteger, server_default=db_default())
     created_at: Mapped[datetime] = created_at_column()
     updated_at: Mapped[datetime] = updated_at_column()
 

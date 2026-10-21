@@ -37,6 +37,7 @@ class UserVocabProgress(Base):
     lapses: Mapped[int] = mapped_column(Integer, server_default=db_default())
     next_review_at: Mapped[datetime] = mapped_column(server_default=db_default())
     last_reviewed_at: Mapped[datetime | None]
+    first_reviewed_at: Mapped[datetime | None]
 
 
 class VocabReviewLog(Base):

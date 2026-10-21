@@ -27,6 +27,24 @@ Notes:
 - The first run on a freshly built database is several times slower (cold cache). Judge warm numbers.
 - Every statement is rate-limited to 120 requests a minute per IP.
 
-## Due cards (M3)
+## Flashcards (checked in M3)
 
-Not built yet. Check `idx_user_vocab_due` with `EXPLAIN` when the session builder exists.
+317,000 cards and 205,000 review logs across 100 users (`scripts/perf/generate_cards.sql`, after
+`generate_words.sql`). One heavy user has 20,000 cards and 200,000 logs (a streak of over 400 days); the
+others have 3,000 cards. Database time only, warm cache (`scripts/perf/explain_flashcards.py`, which
+runs the real service code and explains the SQL it sends):
+
+| Request | Typical user | Heavy user |
+|---|---|---|
+| Build a session (50 reviews + new cards) | 1.2 ms | 4.7 ms |
+| Same, filtered by level | 4.5 ms | 8.8 ms |
+| Statistics (counts + streak) | 1.4 ms | 7.2 ms |
+
+- The due-cards query, the new-cards query and every count use `idx_user_vocab_due` and
+  `idx_user_vocab_first_review`; no sequential scans on `user_vocab_progress`.
+- The streak is a recursive query that probes `idx_vocab_review_logs_user` once per day, so its cost
+  follows the streak length (about 0.4 ms per 60 days), not the number of logs. A first version that
+  collected all distinct days took 94 ms for the heavy user.
+- Days are bounded in Python and passed to Postgres as instants. This Postgres lacks about a hundred
+  legacy zone names that Python accepts (`GB`, `ROC`, `Brazil/West`), so a zone name is never sent to it.
+- Streaks are counted over at most 1,100 days.

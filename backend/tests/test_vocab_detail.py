@@ -171,7 +171,14 @@ async def test_adding_twice_never_resets_progress(user_client, db):
     await db.execute(
         update(UserVocabProgress)
         .where(UserVocabProgress.vocabulary_id == vocab_id)
-        .values(status="review", repetitions=3, interval_days=6, ease_factor=2.1, next_review_at=later)
+        .values(
+            status="review",
+            repetitions=3,
+            interval_days=6,
+            ease_factor=2.1,
+            next_review_at=later,
+            first_reviewed_at=datetime.now(UTC) - timedelta(days=9),
+        )
     )
     again = await user_client.post(f"/api/study-list/{vocab_id}")
     assert again.status_code == 200

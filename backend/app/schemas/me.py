@@ -27,6 +27,7 @@ class MeOut(BaseModel):
     ui_lang: str
     timezone: str
     role: str
+    daily_new_cards: int
     has_password: bool
     google_linked: bool
 
@@ -43,6 +44,7 @@ class MeOut(BaseModel):
             ui_lang=user.ui_lang,
             timezone=user.timezone,
             role=user.role,
+            daily_new_cards=user.daily_new_cards,
             has_password=has_password,
             google_linked=google_linked,
         )
@@ -60,6 +62,7 @@ class MePatch(BaseModel):
     target_level: Level | None = None
     ui_lang: UiLang | None = None
     timezone: str | None = None
+    daily_new_cards: Annotated[int, Field(ge=0, le=200)] | None = None
 
     @field_validator("username")
     @classmethod

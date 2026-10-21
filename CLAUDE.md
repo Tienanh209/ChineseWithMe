@@ -31,6 +31,8 @@ backend/app/
   routers/             one router per area, mounted under /api
   services/            business logic (sessions, passwords, storage, ...)
   services/vocab_import/  M9a: parse.py (CSV/JSON), schema.py (rules), load.py (idempotent upsert, report)
+  services/srs.py      M3: pure SM-2 scheduler (schedule, preview); no database, no clock
+  services/flashcards.py  M3: session builder, apply_review, stats, streak
   services/vocab_search.py  M2: build_statement (query classification, ranking), search
   services/pinyin.py   pinyin/zhuyin validation, pinyin_key (mirrors the DB column), search_key (rule 10)
   seed.py cli.py       python -m app.cli seed [--reset] | import-vocab FILE [--dry-run] [--strict] [--group N]
@@ -102,3 +104,16 @@ never a correlated `EXISTS` (see docs/performance.md). `POST /api/study-list/{id
 Frontend: the look-up page keeps its state in the URL (`?q=&level=&group=&page=`); the script (繁/简) and
 reading (zhuyin/pinyin) toggles live in the prefs store and apply to every word; "Back to search" is a link to
 the last look-up URL (`lib/lastLookup.ts`), not `router.back()`.
+
+## Flashcards (M3)
+
+`services/srs.py` is pure: `schedule(state, rating, now, tz)` (1 again, 2 hard, 3 good, 4 easy). Reviews are
+due at the START of a local day (`interval` days ahead), only "again" uses a time (10 minutes, never past
+tomorrow's start). The rules and intervals are in its docstring; `tests/test_srs.py` includes hypothesis
+property tests. "Today" is the user's calendar day (`users.timezone`): days are bounded in Python and passed
+to Postgres as instants, never as zone names. New cards are capped per day (`users.daily_new_cards`, default
+20), counted by `user_vocab_progress.first_reviewed_at` (a card is `new` exactly until its first review: DB
+CHECK). `POST /api/flashcards/review` locks the card row, writes the new state and the log in one
+transaction, and refuses a card in review that is not due (409 `not_due`), which also makes a retried answer
+harmless; new cards and cards being relearned can be answered at any time. Routes take the clock from the
+`Now` dependency (`app.deps.get_now`) so tests can fix it.

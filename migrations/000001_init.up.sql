@@ -44,6 +44,7 @@ CREATE TABLE users (
   ui_lang           TEXT        NOT NULL DEFAULT 'vi' CHECK (ui_lang ~ '^[a-z]{2}$'),
   timezone          TEXT        NOT NULL DEFAULT 'Asia/Ho_Chi_Minh' CHECK (timezone <> ''),  -- IANA name, validated by the app; defines "today" for streaks and daily caps
   role              TEXT        NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  daily_new_cards   SMALLINT    NOT NULL DEFAULT 20 CHECK (daily_new_cards BETWEEN 0 AND 200),  -- cap on cards first seen per day
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -271,9 +272,14 @@ CREATE TABLE user_vocab_progress (
   lapses           INTEGER     NOT NULL DEFAULT 0   CHECK (lapses >= 0),
   next_review_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_reviewed_at TIMESTAMPTZ,
-  PRIMARY KEY (user_id, vocabulary_id)
+  -- Set on the first review and never changed: "new cards introduced today" is a count on this.
+  first_reviewed_at TIMESTAMPTZ,
+  PRIMARY KEY (user_id, vocabulary_id),
+  -- A card is 'new' exactly until its first review.
+  CONSTRAINT progress_new_iff_unreviewed CHECK ((status = 'new') = (first_reviewed_at IS NULL))
 );
 CREATE INDEX idx_user_vocab_due ON user_vocab_progress (user_id, next_review_at);
+CREATE INDEX idx_user_vocab_first_review ON user_vocab_progress (user_id, first_reviewed_at);
 
 -- Append-only history behind the SRS state (stats, streaks, tuning intervals).
 CREATE TABLE vocab_review_logs (

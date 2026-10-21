@@ -130,6 +130,17 @@ SELECT CASE WHEN (SELECT string_agg(pinyin_normalized, ',' ORDER BY id) FROM voc
        END;
 DELETE FROM vocabulary WHERE pinyin IN ('Àomén', 'Ōuzhōu', 'Nǚ');
 
+-- flashcard scheduling columns ---------------------------------------------
+SELECT 'daily_new_cards default: ' || daily_new_cards FROM users WHERE id = 1;
+SELECT pg_temp.expect_fail($$UPDATE users SET daily_new_cards = -1 WHERE id = 1$$, 'negative daily_new_cards');
+SELECT pg_temp.expect_fail($$UPDATE users SET daily_new_cards = 201 WHERE id = 1$$, 'daily_new_cards above 200');
+UPDATE users SET daily_new_cards = 0 WHERE id = 1;   -- 0 is allowed: no new cards at all
+SELECT pg_temp.expect_fail($$UPDATE user_vocab_progress SET status = 'review' WHERE user_id = 1 AND vocabulary_id = 1$$, 'reviewed status without first_reviewed_at');
+SELECT pg_temp.expect_fail($$UPDATE user_vocab_progress SET first_reviewed_at = now() WHERE user_id = 1 AND vocabulary_id = 1$$, 'new card with first_reviewed_at');
+UPDATE user_vocab_progress SET status = 'learning', first_reviewed_at = now(), last_reviewed_at = now() WHERE user_id = 1 AND vocabulary_id = 1;
+SELECT pg_temp.expect_fail($$UPDATE user_vocab_progress SET status = 'new' WHERE user_id = 1 AND vocabulary_id = 1$$, 'back to new after a review');
+SELECT pg_temp.expect_fail($$UPDATE user_vocab_progress SET ease_factor = 1.2 WHERE user_id = 1 AND vocabulary_id = 1$$, 'ease below 1.3');
+
 -- sessions and auth tokens ------------------------------------------------
 INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (1, sha256('s1'), now() + interval '30 days');
 INSERT INTO auth_tokens (user_id, purpose, token_hash, email, expires_at)
